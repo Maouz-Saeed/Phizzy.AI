@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const friends = [
   { id: '1', name: 'Adam', message: 'Sent you a 🌟 for your progress', feeling: '😊', color: '#FFD580' },
@@ -19,7 +20,7 @@ export default function FriendsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.inviteBanner}>
           <Text style={styles.inviteText}>INVITE YOUR FRIENDS TODAY</Text>
@@ -74,7 +75,7 @@ export default function FriendsScreen() {
           </View>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -83,7 +84,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
     paddingHorizontal: 16,
-    paddingTop: 16,
   },
   scrollContent: { 
     paddingBottom: 120, // Space for floating nav bar

@@ -1,15 +1,17 @@
 import * as React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform, Image, Linking } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 
 import HomeScreen from './src/screens/HomeScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import FriendDetailScreen from './src/screens/FriendDetailScreen';
 import WorkoutRecordingScreen from './src/screens/WorkoutRecordingScreen';
 import PhizzyyMenu from './src/components/PhizzyyMenu';
+import CheckInScreen from './src/screens/CheckinScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -130,6 +132,39 @@ export default function App() {
   const [phizzyyMenuVisible, setPhizzyyMenuVisible] = React.useState(false);
   const navigationRef = React.useRef(null);
 
+  // Handle notification responses
+  const [isNavigationReady, setIsNavigationReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('[App] Notification response received:', response);
+      const url = response.notification.request.content.data?.url;
+      console.log('[App] URL from notification:', url);
+      
+      if (url) {
+        // Extract the path from the URL
+        const path = url.replace('phizzyy://', '').replace('https://phizzyy.app/', '');
+        console.log('[App] Navigating to path:', path);
+        
+        // Wait for navigation to be ready
+        const navigate = () => {
+          if (navigationRef.current && isNavigationReady) {
+            if (path === 'checkin') {
+              navigationRef.current.navigate('CheckIn');
+            }
+          } else {
+            // Retry after a short delay
+            setTimeout(navigate, 100);
+          }
+        };
+        
+        navigate();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isNavigationReady]);
+
   const handlePhizzyyPress = () => {
     setPhizzyyMenuVisible(true);
   };
@@ -147,9 +182,99 @@ export default function App() {
     }
   };
 
+  // Deep linking configuration
+  const linking = {
+    prefixes: ['phizzyy://', 'https://phizzyy.app'],
+    config: {
+      screens: {
+        MainTabs: {
+          screens: {
+            Home: 'home',
+            Friends: {
+              screens: {
+                FriendsList: 'friends',
+                FriendDetail: 'friends/:friendId',
+              },
+            },
+          },
+        },
+        WorkoutRecording: 'workout',
+        CheckIn: 'checkin',
+      },
+    },
+    async getInitialURL() {
+      console.log('[Deep Link] Getting initial URL...');
+      
+      // First, check if app was opened from a deep link
+      const url = await Linking.getInitialURL();
+      if (url != null) {
+        console.log('[Deep Link] Found deep link URL:', url);
+        return url;
+      }
+      
+      // Handle URL from expo push notifications
+      const response = await Notifications.getLastNotificationResponseAsync();
+      let notificationUrl = response?.notification.request.content.data?.url;
+      
+      // Transform relative paths to full URLs
+      if (notificationUrl && notificationUrl.startsWith('/')) {
+        notificationUrl = `phizzyy://${notificationUrl.substring(1)}`;
+        console.log('[Deep Link] Transformed notification URL:', notificationUrl);
+      }
+      
+      console.log('[Deep Link] Notification response:', response);
+      console.log('[Deep Link] Notification URL:', notificationUrl);
+      return notificationUrl;
+    },
+    subscribe(listener) {
+      console.log('[Deep Link] Setting up listeners...');
+      
+      const onReceiveURL = ({ url }) => {
+        console.log('[Deep Link] Received URL from deep link:', url);
+        listener(url);
+      };
+      
+      // Listen to incoming links from deep linking
+      const eventListenerSubscription = Linking.addEventListener('url', onReceiveURL);
+      
+      // Listen to expo push notifications
+      const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('[Deep Link] Notification tapped:', response);
+        let url = response.notification.request.content.data?.url;
+        console.log('[Deep Link] Extracted URL from notification:', url);
+        
+        if (url) {
+          // If URL is a relative path, convert it to full URL
+          if (url.startsWith('/')) {
+            url = `phizzyy://${url.substring(1)}`; // Remove leading slash and add prefix
+            console.log('[Deep Link] Transformed URL:', url);
+          }
+          // Let React Navigation handle the URL
+          listener(url);
+        } else {
+          console.log('[Deep Link] No URL found in notification data');
+        }
+      });
+      
+      return () => {
+        console.log('[Deep Link] Cleaning up listeners...');
+        // Clean up the event listeners
+        eventListenerSubscription.remove();
+        subscription.remove();
+      };
+    },
+  };
+
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer 
+        ref={navigationRef} 
+        linking={linking}
+        onReady={() => {
+          console.log('[Navigation] Navigation ready');
+          setIsNavigationReady(true);
+        }}
+      >
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs">
             {() => (
@@ -168,6 +293,7 @@ export default function App() {
             )}
           </Stack.Screen>
           <Stack.Screen name="WorkoutRecording" component={WorkoutRecordingScreen} />
+          <Stack.Screen name="CheckIn" component={CheckInScreen} />
         </Stack.Navigator>
       </NavigationContainer>
 

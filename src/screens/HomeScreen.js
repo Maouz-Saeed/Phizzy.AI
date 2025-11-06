@@ -1,6 +1,17 @@
-import React from 'react';
+import * as Notifications from 'expo-notifications';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export default function HomeScreen() {
   const recoveryProgress = 65; // Demo data
@@ -11,8 +22,35 @@ export default function HomeScreen() {
     { id: '3', name: 'Core Strengthening', duration: '15 minutes', sets: '4 sets' },
   ];
 
+  async function schedulePushNotification() {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Start Check-In",
+        body: '2 min daily scan',
+        data: { url: "/checkin" },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 2,
+      },
+    });
+  }
+
+  async function scheduleCheckPushNotification() {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Phizzy",
+        body: 'Check in on Adam!',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 2,
+      },
+    });
+  }
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Welcome Message for Suzzy */}
         <View style={styles.welcomeCard}>
@@ -70,8 +108,13 @@ export default function HomeScreen() {
             <Text style={styles.statLabel}>Days Streak</Text>
           </View>
         </View>
+
+        <View>
+          <Button title="Simulate Check-In Notification" onPress={schedulePushNotification} />
+          <Button title="Simulate Check Up Notification" onPress={scheduleCheckPushNotification} />
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -80,7 +123,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
     paddingHorizontal: 16,
-    paddingTop: 16,
   },
   scrollContent: {
     paddingBottom: 120, // Space for floating nav bar
