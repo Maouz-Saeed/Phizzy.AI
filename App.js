@@ -173,6 +173,7 @@ export default function App() {
     // Handle chat action - placeholder for now
     console.log('Chat pressed');
     setPhizzyyMenuVisible(false);
+    navigationRef.current.navigate('CheckIn');
   };
 
   const handleWorkoutPress = () => {

@@ -54,7 +54,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Welcome Message for Suzzy */}
         <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeTitle}>Hello, Suzzy! 👋</Text>
+          <Text style={styles.welcomeTitle}>Hello, Danny! 👋</Text>
           <Text style={styles.welcomeMessage}>
             Welcome back! We're so glad to see you here today. Let's continue your journey to feeling your best.
           </Text>
